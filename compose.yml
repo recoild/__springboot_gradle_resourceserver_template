@@ -1,0 +1,51 @@
+services:
+  oracle-db:
+    image: gvenzl/oracle-free:23
+    ports:
+      - "1521:1521"
+    environment:
+      - APP_USER=${DB_USER}
+      - APP_USER_PASSWORD=${DB_PASSWORD}
+      - ORACLE_RANDOM_PASSWORD=true
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    # options: >-
+    #   --health-cmd healthcheck.sh --health-interval 10s --health-timeout 5s --health-retries 10
+
+  keycloakdb:
+    image: postgres:16.3
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # networks:
+    #   - keycloak_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.2
+    command: start-dev
+    environment:
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8081
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloakdb:5432/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_LOG_LEVEL: info
+    ports:
+      - 8081:8080
+    depends_on:
+      - keycloakdb
+
+volumes:
+  oracle-data:
+  postgres_data:
